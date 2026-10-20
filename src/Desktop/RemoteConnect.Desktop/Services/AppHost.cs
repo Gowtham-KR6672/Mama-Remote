@@ -1,7 +1,9 @@
 using System.Reflection;
+using System.Runtime.Versioning;
 using Microsoft.Extensions.Logging;
 using RemoteConnect.LocalIpc.Windows;
 using RemoteConnect.Platform;
+using RemoteConnect.Platform.Windows;
 using RemoteConnect.Protocol;
 using RemoteConnect.Protocol.Signaling;
 using RemoteConnect.Security;
@@ -115,7 +117,35 @@ public sealed class AppHost : IAsyncDisposable
             ApplyAutoStart(); // binary moved/updated: refresh the registered path
         }
 
+        if (OperatingSystem.IsWindows())
+        {
+            RegisterInstalledApp();
+        }
+
         await ApplyNetworkSettingsAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// A copy that was simply run (single RemoteConnect.exe, no installer) lists itself under Installed apps so it
+    /// can be uninstalled normally. Service-mode installs have their own machine-wide entry.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    private void RegisterInstalledApp()
+    {
+        var exe = Environment.ProcessPath;
+        if (ServiceModeInstalled || !Uninstaller.IsDeployedCopy(exe))
+        {
+            return;
+        }
+
+        try
+        {
+            WindowsShell.RegisterInstalledApp(exe!, AppVersion);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning("Could not add RemoteConnect to Installed apps: {Message}", ex.Message);
+        }
     }
 
     /// <summary>Re-applies listener, discovery and server settings after the user saved Settings.</summary>
@@ -125,7 +155,8 @@ public sealed class AppHost : IAsyncDisposable
         {
             if (Host.ListeningPort is null || _appliedLanPort != Settings.LanPort)
             {
-                Host.StartLan(Settings.LanPort);
+                // REMOTECONNECT_LAN_LOOPBACK=1: listen on 127.0.0.1 only (two instances on one PC for testing).
+                Host.StartLan(Settings.LanPort, loopbackOnly: Environment.GetEnvironmentVariable("REMOTECONNECT_LAN_LOOPBACK") == "1");
                 _appliedLanPort = Settings.LanPort;
             }
         }

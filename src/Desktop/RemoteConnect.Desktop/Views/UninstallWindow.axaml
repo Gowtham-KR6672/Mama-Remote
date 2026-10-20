@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="RemoteConnect.Desktop.Views.UninstallWindow"
+        Title="Uninstall RemoteConnect"
+        Icon="/Assets/app-icon.png"
+        Width="460" SizeToContent="Height" CanResize="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource PageBrush}">
+  <StackPanel Margin="22" Spacing="12">
+    <TextBlock Text="Uninstall RemoteConnect?" Classes="h1" />
+    <TextBlock TextWrapping="Wrap"
+               Text="RemoteConnect will stop starting automatically, be removed from this computer, and nobody will be able to connect to this computer any more. Active sessions are ended." />
+    <CheckBox x:Name="RemoveData" Content="Also delete settings and this computer's ID" />
+    <TextBlock Classes="subtle"
+               Text="Leave it unticked to keep the same ID if you install RemoteConnect again." />
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="0,6,0,0">
+      <Button Content="Cancel" IsCancel="True" Click="OnCancel" />
+      <Button Content="Uninstall" Background="#DC2626" Foreground="White" Click="OnUninstall" />
+    </StackPanel>
+  </StackPanel>
+</Window>

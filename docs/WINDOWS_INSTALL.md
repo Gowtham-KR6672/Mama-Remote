@@ -19,6 +19,12 @@ powershell -ExecutionPolicy Bypass -File .\artifacts\RemoteConnect-win-x64\insta
 
 After installation RemoteConnect is running and sits in the notification area (tray icon). It starts the same way at every sign-in, with no window. Click the tray icon or the Start-menu entry to open it. Closing the window keeps it running in the tray; choose **Quit** from the tray menu to stop it.
 
+**Single file, no installer:** `scripts\publish-single-file.ps1` builds one `RemoteConnect.exe`. Put it in a permanent folder, such as `C:\RemoteConnect`, and run it. It sets itself to start at sign-in and lists itself under **Settings → Apps → Installed apps**, so it can be uninstalled from there or from RemoteConnect's own **Settings → Uninstall RemoteConnect…**. Uninstalling:
+- stops RemoteConnect;
+- removes auto-start and the Installed-apps entry;
+- deletes the exe;
+- optionally deletes the settings and device ID.
+
 **Setup.exe instead of a script:** build [deployment/Windows/RemoteConnect.iss](../deployment/Windows/RemoteConnect.iss) with Inno Setup 6, then sign it with `signtool`. (The Inno Setup installer is per-user only; service mode is installed with the script below.)
 
 ## Service mode: reachable right after power-on
@@ -77,6 +83,16 @@ To remove service mode, run `uninstall-windows.ps1` **elevated**. `-RemoveUserDa
 ```
 
 This removes the app, auto-start, shortcut and uninstall entry. It removes firewall rules if run elevated. `-RemoveUserData` also deletes the device identity, so a reinstall gets a new ID.
+
+Alternatively, for any per-user copy, scripted or single file, use **Settings → Apps → Installed apps → RemoteConnect → Uninstall**, or **RemoteConnect → Settings → Uninstall RemoteConnect…**. These don't remove firewall rules added with `-AddFirewallRules`; that needs the elevated script.
+
+## The session panel on the host
+
+While someone is connected, a panel sits in the bottom-right corner of the host's screen. It shows who is connected and for how long, has **Disconnect**, and has switches for mouse/keyboard and clipboard.
+- **–** shrinks it to a small bar, and **Details** expands it again. RemoteConnect remembers your choice.
+- You can drag it anywhere.
+- It can't be closed or hidden while a session is active, and the remote side can't remove it. Whoever sits at the computer always knows someone is connected.
+- On Windows 10 2004 and later the panel is left out of the shared screen image, so it never covers what the remote side sees.
 
 For a service-mode install, run it from an elevated prompt (`& "$env:ProgramFiles\RemoteConnect\uninstall-windows.ps1"`). It stops and deletes the service, which ends the agent and its sessions, then removes `%ProgramFiles%\RemoteConnect`, the machine-wide shortcut and entries, and `HKLM\SOFTWARE\RemoteConnect`. The service's identity and settings are kept unless you add `-RemoveUserData`. Without elevation the script refuses and changes nothing.
 

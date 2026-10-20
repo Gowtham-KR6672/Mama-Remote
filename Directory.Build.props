@@ -11,7 +11,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Product>RemoteConnect</Product>
     <Copyright>RemoteConnect contributors</Copyright>
     <Deterministic>true</Deterministic>

@@ -191,6 +191,15 @@
                 <TextBlock Text="{Binding Message}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="460"
                            Classes.error="{Binding MessageIsError}" />
               </StackPanel>
+
+              <TextBlock Text="Remove RemoteConnect" Classes="h2" Margin="0,28,0,4" />
+              <StackPanel Spacing="6" IsVisible="{Binding CanUninstall}">
+                <TextBlock Classes="subtle"
+                           Text="Stops RemoteConnect from starting automatically and removes it from this computer. On Windows you can also uninstall it from Settings → Apps → Installed apps." />
+                <Button Content="Uninstall RemoteConnect…" Foreground="#DC2626" Command="{Binding UninstallCommand}" />
+              </StackPanel>
+              <TextBlock Classes="subtle" IsVisible="{Binding !CanUninstall}"
+                         Text="RemoteConnect is installed in service mode. Remove it from Settings → Apps → Installed apps (administrator rights required)." />
             </StackPanel>
           </ScrollViewer>
         </TabItem>

@@ -5,25 +5,51 @@
         x:DataType="vm:HostIndicatorViewModel"
         Title="RemoteConnect — session active"
         Icon="/Assets/app-icon.png"
-        Width="340" SizeToContent="Height" CanResize="False"
-        Topmost="True" ShowInTaskbar="True"
+        SizeToContent="WidthAndHeight" CanResize="False"
+        Topmost="True" ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
         SystemDecorations="None"
         Background="Transparent" TransparencyLevelHint="Transparent">
-  <Border Background="#1E3A8A" CornerRadius="12" BorderBrush="#3B82F6" BorderThickness="2" Padding="14">
-    <StackPanel Spacing="6">
-      <Grid ColumnDefinitions="Auto,*" x:Name="DragArea" Background="Transparent">
-        <Ellipse Width="10" Height="10" Fill="#EF4444" VerticalAlignment="Center" Margin="0,0,8,0" />
-        <TextBlock Grid.Column="1" Text="This computer is being accessed remotely" Foreground="White" FontWeight="SemiBold" TextWrapping="Wrap" />
-      </Grid>
-      <TextBlock Text="{Binding ControllerName}" Foreground="White" FontSize="16" FontWeight="SemiBold" />
-      <TextBlock Text="{Binding ControllerId, StringFormat='ID {0}'}" Foreground="#D9FFFFFF" />
-      <TextBlock Foreground="#B3FFFFFF" FontSize="12">
-        <Run Text="{Binding Mode}" /><Run Text=" · " /><Run Text="{Binding Route}" /><Run Text=" · " /><Run Text="{Binding Elapsed}" />
-      </TextBlock>
-      <CheckBox IsChecked="{Binding AllowControl}" IsEnabled="{Binding CanEditControl}" Foreground="White" Content="Allow mouse &amp; keyboard control" />
-      <CheckBox IsChecked="{Binding AllowClipboard}" IsEnabled="{Binding CanEditClipboard}" Foreground="White" Content="Allow clipboard sharing" />
-      <Button Content="Disconnect" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-              Background="#DC2626" Foreground="White" FontWeight="SemiBold" Command="{Binding DisconnectCommand}" />
-    </StackPanel>
-  </Border>
+  <Panel>
+    <!-- Full panel -->
+    <Border IsVisible="{Binding !IsCollapsed}" Width="320"
+            Background="#1E3A8A" CornerRadius="12" BorderBrush="#3B82F6" BorderThickness="2" Padding="14,8,8,14">
+      <StackPanel Spacing="6">
+        <Grid ColumnDefinitions="Auto,*,Auto" x:Name="DragArea" Background="Transparent">
+          <Ellipse Width="10" Height="10" Fill="#EF4444" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <TextBlock Grid.Column="1" Text="This computer is being accessed remotely" Foreground="White" FontWeight="SemiBold"
+                     TextWrapping="Wrap" VerticalAlignment="Center" />
+          <Button Grid.Column="2" Content="–" FontSize="18" FontWeight="Bold" Padding="10,0,10,4" Margin="4,0,0,0"
+                  Background="Transparent" Foreground="White" VerticalAlignment="Top"
+                  ToolTip.Tip="Shrink this panel to a small bar" AutomationProperties.Name="Minimize panel"
+                  Command="{Binding ToggleCollapsedCommand}" />
+        </Grid>
+        <TextBlock Text="{Binding ControllerName}" Foreground="White" FontSize="16" FontWeight="SemiBold" />
+        <TextBlock Text="{Binding ControllerId, StringFormat='ID {0}'}" Foreground="#D9FFFFFF" />
+        <TextBlock Foreground="#B3FFFFFF" FontSize="12" TextWrapping="Wrap">
+          <Run Text="{Binding Mode}" /><Run Text=" · " /><Run Text="{Binding Route}" /><Run Text=" · " /><Run Text="{Binding Elapsed}" />
+        </TextBlock>
+        <CheckBox IsChecked="{Binding AllowControl}" IsEnabled="{Binding CanEditControl}" Foreground="White" Content="Allow mouse &amp; keyboard control" />
+        <CheckBox IsChecked="{Binding AllowClipboard}" IsEnabled="{Binding CanEditClipboard}" Foreground="White" Content="Allow clipboard sharing" />
+        <Button Content="Disconnect" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,0,6,0"
+                Background="#DC2626" Foreground="White" FontWeight="SemiBold" Command="{Binding DisconnectCommand}" />
+      </StackPanel>
+    </Border>
+
+    <!-- Small bar -->
+    <Border IsVisible="{Binding IsCollapsed}" x:Name="DragAreaCollapsed"
+            Background="#1E3A8A" CornerRadius="18" BorderBrush="#3B82F6" BorderThickness="2" Padding="12,4,4,4">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Ellipse Width="9" Height="9" Fill="#EF4444" VerticalAlignment="Center" />
+        <TextBlock VerticalAlignment="Center" Foreground="White" FontSize="12" MaxWidth="260" TextTrimming="CharacterEllipsis">
+          <Run Text="Remote session · " /><Run Text="{Binding ControllerName}" /><Run Text=" · " /><Run Text="{Binding Elapsed}" />
+        </TextBlock>
+        <Button Content="Details" FontSize="12" Padding="8,2" Background="#33FFFFFF" Foreground="White"
+                ToolTip.Tip="Show the full panel" AutomationProperties.Name="Show details"
+                Command="{Binding ToggleCollapsedCommand}" />
+        <Button Content="Disconnect" FontSize="12" Padding="8,2" Background="#DC2626" Foreground="White"
+                Command="{Binding DisconnectCommand}" />
+      </StackPanel>
+    </Border>
+  </Panel>
 </Window>

@@ -40,13 +40,19 @@ public sealed class SingleInstance : IDisposable
         return null;
     }
 
-    public static void SignalExisting()
+    /// <summary>Bring the running copy's window to the front.</summary>
+    public const byte ShowCommand = 1;
+
+    /// <summary>Ask the running copy to end its sessions and exit (used by the uninstaller).</summary>
+    public const byte QuitCommand = 2;
+
+    public static void SignalExisting(byte command = ShowCommand)
     {
         try
         {
             using var client = new NamedPipeClientStream(".", PipeName, PipeDirection.Out, PipeOptions.CurrentUserOnly);
             client.Connect(1500);
-            client.WriteByte(1);
+            client.WriteByte(command);
         }
         catch (Exception)
         {
@@ -54,7 +60,7 @@ public sealed class SingleInstance : IDisposable
         }
     }
 
-    public void ListenForActivation(Action onActivate)
+    public void ListenForActivation(Action onActivate, Action? onQuit = null)
     {
         _cts = new CancellationTokenSource();
         var ct = _cts.Token;
@@ -68,8 +74,15 @@ public sealed class SingleInstance : IDisposable
                         PipeTransmissionMode.Byte, PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
                     await server.WaitForConnectionAsync(ct).ConfigureAwait(false);
                     var buffer = new byte[1];
-                    _ = await server.ReadAsync(buffer, ct).ConfigureAwait(false);
-                    onActivate();
+                    int read = await server.ReadAsync(buffer, ct).ConfigureAwait(false);
+                    if (read == 1 && buffer[0] == QuitCommand && onQuit is not null)
+                    {
+                        onQuit();
+                    }
+                    else
+                    {
+                        onActivate();
+                    }
                 }
                 catch (OperationCanceledException)
                 {

@@ -18,6 +18,12 @@ internal static class Program
             return 0;
         }
 
+        // Windows "Installed apps → Uninstall" for a copy that registered itself (see AppHost.RegisterInstalledApp).
+        if (args.Contains(Uninstaller.Argument))
+        {
+            return OperatingSystem.IsWindows() ? Uninstaller.RunFromCommandLine(args) : 2;
+        }
+
         // Service mode: started by RemoteConnect.HostService in the console session (sign-in screen included).
         if (args.Contains(ServiceModeLayout.AgentArgument))
         {

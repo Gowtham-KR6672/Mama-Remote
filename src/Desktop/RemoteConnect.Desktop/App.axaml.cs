@@ -51,7 +51,9 @@ public partial class App : Application
             interaction.Attach(_host);
             SettingsViewModel.ApplyTheme(_host.Settings.Theme);
 
-            _main = new MainWindow { DataContext = new MainViewModel(_host, OpenSession, CopyTextAsync) };
+            var mainVm = new MainViewModel(_host, OpenSession, CopyTextAsync);
+            mainVm.Settings.UninstallHandler = () => UninstallAsync(desktop);
+            _main = new MainWindow { DataContext = mainVm };
             mainRef = _main;
             SetupTray(desktop);
 
@@ -60,7 +62,9 @@ public partial class App : Application
                 _main.Show();
             }
 
-            Instance?.ListenForActivation(() => Dispatcher.UIThread.Post(ShowMain));
+            Instance?.ListenForActivation(
+                () => Dispatcher.UIThread.Post(ShowMain),
+                () => Dispatcher.UIThread.Post(async () => await QuitAsync(desktop))); // uninstaller asks us to exit
             desktop.ShutdownRequested += (_, _) => ShutdownHost();
 
             if (TryGetFeature(typeof(IActivatableLifetime)) is IActivatableLifetime activatable)
@@ -184,6 +188,35 @@ public partial class App : Application
             await _host.DisposeAsync();
         }
 
+        desktop.Shutdown(0);
+    }
+
+    /// <summary>Settings → Uninstall: confirm, end sessions, remove everything and exit.</summary>
+    private async Task UninstallAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        if (_main is null || _host is null || _quitting)
+        {
+            return;
+        }
+
+        ShowMain();
+        bool? removeData = await new UninstallWindow().ShowDialog<bool?>(_main);
+        if (removeData is null)
+        {
+            return;
+        }
+
+        _quitting = true;
+        _main.AllowClose = true;
+        if (_tray is not null)
+        {
+            _tray.IsVisible = false;
+        }
+
+        _host.Host.EndAllSessions(DisconnectReason.HostShuttingDown);
+        await _host.DisposeAsync();
+        Uninstaller.Remove(removeData.Value);
+        Uninstaller.DeleteProgramFiles();
         desktop.Shutdown(0);
     }
 

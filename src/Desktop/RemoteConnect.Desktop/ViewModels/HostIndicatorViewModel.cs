@@ -8,15 +8,21 @@ using RemoteConnect.Session.Transport;
 
 namespace RemoteConnect.Desktop.ViewModels;
 
-/// <summary>The always-visible "someone is connected" panel on the host. The remote side cannot hide it.</summary>
+/// <summary>
+/// The always-visible "someone is connected" panel on the host. The remote side cannot hide it; the person at this
+/// computer can shrink it to a small bar that still shows who is connected and offers Disconnect.
+/// </summary>
 public sealed partial class HostIndicatorViewModel : ObservableObject
 {
     private readonly HostSession _session;
+    private readonly Action<bool>? _collapsedChanged;
     private bool _syncing;
 
-    public HostIndicatorViewModel(HostSession session)
+    public HostIndicatorViewModel(HostSession session, bool startCollapsed = false, Action<bool>? collapsedChanged = null)
     {
         _session = session;
+        _isCollapsed = startCollapsed;
+        _collapsedChanged = collapsedChanged;
         _allowControl = session.Has(SessionPermissions.ControlInput);
         _allowClipboard = session.Has(SessionPermissions.Clipboard);
         _canEditControl = _allowControl;
@@ -48,6 +54,14 @@ public sealed partial class HostIndicatorViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _canEditClipboard;
+
+    [ObservableProperty]
+    private bool _isCollapsed;
+
+    partial void OnIsCollapsedChanged(bool value) => _collapsedChanged?.Invoke(value);
+
+    [RelayCommand]
+    private void ToggleCollapsed() => IsCollapsed = !IsCollapsed;
 
     public void Tick()
     {

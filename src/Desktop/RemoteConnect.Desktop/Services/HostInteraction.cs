@@ -32,7 +32,15 @@ public sealed class HostInteraction : IHostInteraction
     {
         Dispatcher.UIThread.Post(() =>
         {
-            var window = new HostIndicatorWindow(new HostIndicatorViewModel(session), _indicators.Count);
+            var vm = new HostIndicatorViewModel(session, _app?.Settings.IndicatorCollapsed ?? false, collapsed =>
+            {
+                if (_app is not null)
+                {
+                    _app.Settings.IndicatorCollapsed = collapsed;
+                    _app.Store.TrySave();
+                }
+            });
+            var window = new HostIndicatorWindow(vm, _indicators.Count);
             _indicators[session.Id] = window;
             window.Show();
         });

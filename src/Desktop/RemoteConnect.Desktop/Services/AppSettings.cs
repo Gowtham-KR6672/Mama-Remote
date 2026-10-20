@@ -59,6 +59,9 @@ public sealed class AppSettings
     [JsonConverter(typeof(JsonStringEnumConverter<QualityPreset>))]
     public QualityPreset Quality { get; set; } = QualityPreset.Balanced;
 
+    /// <summary>The host-side session panel was last shrunk to its small bar.</summary>
+    public bool IndicatorCollapsed { get; set; }
+
     public Dictionary<string, string> KnownHosts { get; set; } = new();
 
     public List<RecentSession> Recent { get; set; } = new();

@@ -35,6 +35,15 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public string Version => $"RemoteConnect {AppHost.AppVersion} · {PlatformServices.PlatformName}";
 
+    /// <summary>Set by the app: shows the confirmation and removes RemoteConnect.</summary>
+    public Func<Task>? UninstallHandler { get; set; }
+
+    /// <summary>A service-mode install is machine-wide and needs administrator rights to remove.</summary>
+    public bool CanUninstall => !_app.ServiceModeInstalled;
+
+    [RelayCommand]
+    private Task Uninstall() => UninstallHandler?.Invoke() ?? Task.CompletedTask;
+
     [ObservableProperty] private string _alias = string.Empty;
     [ObservableProperty] private string _theme = "System";
     [ObservableProperty] private bool _autoStart;
