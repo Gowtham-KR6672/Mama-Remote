@@ -6,8 +6,10 @@ services:
     runtime: docker
     dockerfilePath: ./deployment/Server/Dockerfile
     dockerContext: .
-    # "starter" (paid) stays on 24/7. "free" works for trials but sleeps when idle, so devices go offline.
-    plan: starter
+    # "free": no payment method needed. It sleeps only after 15 min with no traffic; every running RemoteConnect
+    # app keeps its WebSocket busy (keep-alive every 15 s), so it stays awake while any of your devices is on.
+    # Use "starter" (paid) for guaranteed always-on and a persistent disk.
+    plan: free
     # Pick the region closest to your computers: singapore, frankfurt, oregon, ohio, virginia.
     region: singapore
     healthCheckPath: /health/ready

@@ -8,16 +8,21 @@ Render runs the server as an always-on Docker web service. HTTPS on `https://<na
 
 | Plan | Behaviour | Use for |
 |---|---|---|
-| **Starter** (paid) | Always on. | Uninterrupted use. `render.yaml` uses this. |
-| Free | Spins down when idle and restarts on the next request. Devices show "server offline" in the meantime and reconnect automatically when it wakes. | Trying it out only. |
+| **Free** (`render.yaml` default; no card needed) | Spins down after 15 minutes with **no** inbound traffic. Render counts WebSocket messages on open connections as traffic, and every running RemoteConnect app sends a keep-alive every 15 s. So the server stays awake while at least one of your devices is on. If every device is off, it sleeps; the first device to come back wakes it in about a minute and reconnects on its own. | Personal use and small teams. |
+| Starter (paid) | Always on; persistent disk available. | Guaranteed availability, larger teams. |
 
-Check current prices and bandwidth allowances at https://render.com/pricing. Relayed sessions count as outbound bandwidth: roughly 0.2–8 Mbit/s while a relayed session is active. Direct LAN sessions don't use the server's bandwidth.
+**Free plan limits** (see https://render.com/docs/free):
+- **750 instance hours per month** per workspace, enough for one service running all month. Don't run other free services in the same workspace, or the hours may run out and the service is suspended until next month.
+- **Outbound bandwidth is limited.** Relayed sessions use roughly 0.2–8 Mbit/s while active; sessions on the same LAN connect directly and use none. Without a payment method on file, Render **suspends free services for the rest of the month** when the allowance is exceeded.
+- There's no persistent disk. Device bindings are rebuilt automatically after a restart.
+
+To switch plans, change `plan:` in `render.yaml` and push.
 
 ## Steps
 
 1. **Put the `Code` folder in a Git repository** on GitHub or GitLab (private is fine). Render deploys from Git. `render.yaml` must be at the repository root, next to `RemoteConnect.sln`.
 2. In Render go to **New → Blueprint**, connect the repository and select it. Render reads `render.yaml` and creates the service `remoteconnect-server`. Optionally set the region nearest you in `render.yaml` first (singapore, frankfurt, oregon, ohio or virginia).
-3. When asked for `RemoteConnect__RegistrationKey`, enter a long random value, for example from PowerShell: `[guid]::NewGuid().ToString() + [guid]::NewGuid().ToString()`. Keep it; every computer needs it.
+3. Enter any **Blueprint Name** (e.g. `remoteconnect`). When asked for `RemoteConnect__RegistrationKey`, enter a long random value, for example from PowerShell: `[guid]::NewGuid().ToString() + [guid]::NewGuid().ToString()`. Keep it; every computer needs it.
 4. Click **Apply** and wait for the first build and deploy (a few minutes).
 5. Verify in a browser:
    - `https://<your-service>.onrender.com/health/ready` → `Healthy`
