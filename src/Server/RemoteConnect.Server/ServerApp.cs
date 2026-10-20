@@ -108,7 +108,7 @@ public static class ServerApp
             product = "RemoteConnect Server",
             version = Version,
             protocolVersion = ProtocolInfo.Version,
-            registrationKeyRequired = !string.IsNullOrEmpty(o.Value.RegistrationKey),
+            registrationKeyRequired = !string.IsNullOrWhiteSpace(o.Value.RegistrationKey),
             relay = true,
         }));
 
@@ -119,8 +119,8 @@ public static class ServerApp
             var o = app.Services.GetRequiredService<IOptions<ServerOptions>>().Value;
             var log = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("RemoteConnect.Server");
             log.LogInformation("RemoteConnect Server {Version} started. Registration key required: {KeyRequired}. Admin API: {Admin}",
-                Version, !string.IsNullOrEmpty(o.RegistrationKey), string.IsNullOrEmpty(o.AdminApiKey) ? "disabled" : "enabled");
-            if (string.IsNullOrEmpty(o.RegistrationKey))
+                Version, !string.IsNullOrWhiteSpace(o.RegistrationKey), string.IsNullOrEmpty(o.AdminApiKey) ? "disabled" : "enabled");
+            if (string.IsNullOrWhiteSpace(o.RegistrationKey))
             {
                 log.LogWarning("No RemoteConnect:RegistrationKey configured — any device that can reach this server can register. Set one for internet-facing deployments.");
             }

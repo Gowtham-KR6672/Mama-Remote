@@ -75,8 +75,7 @@ public sealed class SignalHub : Hub
             return Fail(RegisterError.InvalidRequest, "Malformed registration.");
         }
 
-        if (!string.IsNullOrEmpty(_options.RegistrationKey)
-            && !FixedTimeEquals(_options.RegistrationKey, request.RegistrationKey ?? string.Empty))
+        if (!RegistrationKeyMatches(_options.RegistrationKey, request.RegistrationKey))
         {
             return Fail(RegisterError.RegistrationKeyInvalid, "This server requires a valid registration key (Settings → Server).");
         }
@@ -257,6 +256,16 @@ public sealed class SignalHub : Hub
         }
 
         return result.ToArray();
+    }
+
+    /// <summary>
+    /// Keys are compared without surrounding whitespace: values pasted into a hosting dashboard (or copied from a
+    /// terminal) often carry a stray newline or space. No configured key = registration is open.
+    /// </summary>
+    internal static bool RegistrationKeyMatches(string? configured, string? supplied)
+    {
+        var expected = configured?.Trim();
+        return string.IsNullOrEmpty(expected) || FixedTimeEquals(expected, supplied?.Trim() ?? string.Empty);
     }
 
     private static bool FixedTimeEquals(string a, string b)

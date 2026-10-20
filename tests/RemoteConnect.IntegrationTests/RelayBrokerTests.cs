@@ -100,6 +100,18 @@ public class RelayBrokerTests : IAsyncLifetime
     public void Paas_port_variable_maps_to_listen_address(string port, string? expected)
         => Assert.Equal(expected, ServerApp.ListenUrlFromPort(port));
 
+    [Theory]
+    [InlineData("secret-key", "secret-key", true)]
+    [InlineData("secret-key\n", "secret-key", true)]       // pasted into a dashboard with a trailing newline
+    [InlineData("  secret-key ", "secret-key\r\n", true)]
+    [InlineData("secret-key", "secret-kez", false)]
+    [InlineData("secret-key", "", false)]
+    [InlineData("secret-key", null, false)]
+    [InlineData("", "anything", true)]                     // no key configured = open registration
+    [InlineData("   ", null, true)]
+    public void Registration_key_comparison_ignores_surrounding_whitespace(string configured, string? supplied, bool expected)
+        => Assert.Equal(expected, RemoteConnect.Server.Hubs.SignalHub.RegistrationKeyMatches(configured, supplied));
+
     [Fact]
     public async Task Relay_rejects_wrong_or_reused_tokens()
     {
