@@ -54,6 +54,7 @@ public partial class App : Application
             var mainVm = new MainViewModel(_host, OpenSession, CopyTextAsync);
             mainVm.Settings.UninstallHandler = () => UninstallAsync(desktop);
             _main = new MainWindow { DataContext = mainVm };
+            WindowPlacement.FitAndCenter(_main, fraction: 0.92);
             mainRef = _main;
             SetupTray(desktop);
 
@@ -153,6 +154,11 @@ public partial class App : Application
         var vm = new RemoteSessionViewModel(_host!, target, info =>
             Dispatcher.UIThread.InvokeAsync(() => new ConfirmHostWindow(info).ShowDialog<bool>(window!)));
         window = new RemoteSessionWindow(vm);
+
+        // Open on the same screen as the main window, maximized (like AnyDesk). "Restore" then gives a window that
+        // fits that screen with its title bar visible, so it can be moved to another monitor.
+        WindowPlacement.FitAndCenter(window, _main is { IsVisible: true } ? WindowPlacement.ScreenOf(_main) : null, fraction: 0.85);
+        window.WindowState = WindowState.Maximized;
         window.Show();
         _ = vm.StartAsync();
     }

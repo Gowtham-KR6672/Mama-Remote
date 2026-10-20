@@ -60,6 +60,33 @@ public class PlatformTests
         Assert.Equal((-1920d, 0d), FrameGeometry.ToAbsolute(d, -5, -5)); // clamped
     }
 
+    [Theory]
+    // The reported case: 1280x820 session window on a 1366x768 laptop (720 px working area) at 100 %.
+    [InlineData(1280, 820, 0, 0, 1366, 720, 1.0)]
+    // Secondary 1366x768 to the left of the primary (negative origin), and the 2560x1440 primary.
+    [InlineData(1280, 820, -1366, 0, 1366, 720, 1.0)]
+    [InlineData(1280, 820, 0, 0, 2560, 1392, 1.0)]
+    // 1920x1080 laptop at 150 % and a 1366x768 laptop at 125 %.
+    [InlineData(1280, 820, 0, 0, 1920, 1032, 1.5)]
+    [InlineData(1000, 680, 0, 0, 1366, 728, 1.25)]
+    public void Windows_fit_the_screen_with_their_title_bar_visible(double w, double h, int ax, int ay, int aw, int ah, double scale)
+    {
+        var b = FrameGeometry.FitWindow(w, h, ax, ay, aw, ah, scale);
+        int outerW = (int)Math.Round(b.Width * scale);
+        int outerH = (int)Math.Round((b.Height + 40) * scale);
+        Assert.InRange(b.X, ax, ax + aw - outerW);       // fully inside horizontally
+        Assert.InRange(b.Y, ay, ay + ah - outerH);       // title bar (top) and bottom edge on screen
+        Assert.True(b.Width <= w && b.Height <= h);      // never grows
+    }
+
+    [Fact]
+    public void Windows_that_already_fit_keep_their_size()
+    {
+        var b = FrameGeometry.FitWindow(1280, 820, 0, 0, 2560, 1392, 1.0);
+        Assert.Equal((1280d, 820d), (b.Width, b.Height));
+        Assert.Equal((640, 266), (b.X, b.Y));
+    }
+
     [Fact]
     public void LaunchAgent_plist_escapes_arguments()
     {

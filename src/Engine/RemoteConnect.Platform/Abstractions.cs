@@ -86,6 +86,9 @@ public interface IAutoStart
     void SetEnabled(bool enabled);
 }
 
+/// <summary>Window client size in DIPs and outer top-left position in physical pixels.</summary>
+public readonly record struct WindowBounds(double Width, double Height, int X, int Y);
+
 public static class FrameGeometry
 {
     /// <summary>Largest size with the same aspect ratio that fits in max bounds (never upscales).</summary>
@@ -106,6 +109,29 @@ public static class FrameGeometry
     }
 
     public static double Clamp01(double v) => v < 0 ? 0 : v > 1 ? 1 : v;
+
+    /// <summary>
+    /// Shrinks a window (client size in DIPs) so that it, including its title bar, fits the working area of a screen
+    /// (physical pixels) and centres it there. Keeps the title bar reachable on small or highly scaled displays.
+    /// </summary>
+    public static WindowBounds FitWindow(
+        double width, double height,
+        int areaX, int areaY, int areaWidth, int areaHeight,
+        double scale, double fraction = 0.9, double frameAllowance = 40)
+    {
+        scale = scale > 0 ? scale : 1;
+        double maxWidth = areaWidth / scale * fraction;
+        double maxHeight = (areaHeight / scale * fraction) - frameAllowance;
+        double w = Math.Max(200, Math.Min(width, maxWidth));
+        double h = Math.Max(150, Math.Min(height, maxHeight));
+        int outerWidth = (int)Math.Round(w * scale);
+        int outerHeight = (int)Math.Round((h + frameAllowance) * scale);
+        return new WindowBounds(
+            w,
+            h,
+            areaX + Math.Max(0, (areaWidth - outerWidth) / 2),
+            areaY + Math.Max(0, (areaHeight - outerHeight) / 2));
+    }
 
     /// <summary>Maps a normalized position to an absolute point inside the display (edges inclusive).</summary>
     public static (double X, double Y) ToAbsolute(DisplayInfo display, double nx, double ny)

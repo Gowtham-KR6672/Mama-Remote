@@ -35,9 +35,20 @@ public partial class RemoteSessionWindow : Window
         Screen.Focus();
     }
 
+    private WindowState _stateBeforeFullScreen = WindowState.Maximized;
+
     private void ToggleFullScreen(object? sender, RoutedEventArgs e)
     {
-        WindowState = WindowState == WindowState.FullScreen ? WindowState.Normal : WindowState.FullScreen;
+        if (WindowState == WindowState.FullScreen)
+        {
+            WindowState = _stateBeforeFullScreen;
+        }
+        else
+        {
+            _stateBeforeFullScreen = WindowState;
+            WindowState = WindowState.FullScreen;
+        }
+
         FullScreenToggle.IsChecked = WindowState == WindowState.FullScreen;
         Screen.Focus();
     }
