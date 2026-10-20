@@ -1,0 +1,69 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RemoteConnect.Desktop.ViewModels"
+        xmlns:controls="using:RemoteConnect.Desktop.Controls"
+        x:Class="RemoteConnect.Desktop.Views.RemoteSessionWindow"
+        x:DataType="vm:RemoteSessionViewModel"
+        Title="{Binding Title}"
+        Icon="/Assets/app-icon.png"
+        Width="1280" Height="820" MinWidth="640" MinHeight="420"
+        WindowStartupLocation="CenterScreen"
+        Background="Black">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Background="{DynamicResource ToolbarBrush}" Padding="10,6" IsVisible="{Binding IsConnected}">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="10">
+          <ComboBox ItemsSource="{Binding Monitors}" SelectedIndex="{Binding SelectedMonitor}" MinWidth="200"
+                    ToolTip.Tip="Remote monitor" AutomationProperties.Name="Remote monitor" />
+          <ComboBox ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}" MinWidth="110"
+                    ToolTip.Tip="Image quality" AutomationProperties.Name="Image quality" />
+          <Button Content="Ctrl+Shift+Esc" ToolTip.Tip="Send Ctrl+Shift+Esc (Task Manager) to the remote computer" Click="SendTaskManager" IsEnabled="{Binding CanControl}" />
+          <ToggleButton x:Name="FullScreenToggle" Content="Full screen" Click="ToggleFullScreen" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="14" HorizontalAlignment="Center" VerticalAlignment="Center">
+          <TextBlock Text="{Binding PermissionsText}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding RouteText}" Classes="subtle" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding StatsText}" Classes="subtle" VerticalAlignment="Center" />
+        </StackPanel>
+        <Button Grid.Column="2" Content="Disconnect" Background="#DC2626" Foreground="White" Command="{Binding DisconnectCommand}" />
+      </Grid>
+    </Border>
+
+    <Grid>
+      <controls:RemoteScreenView x:Name="Screen" Session="{Binding Session}" IsVisible="{Binding IsConnected}" />
+
+      <Border Background="{DynamicResource OverlayBrush}" IsVisible="{Binding ShowOverlay}">
+        <Border Classes="card" HorizontalAlignment="Center" VerticalAlignment="Center" Width="460" Padding="24">
+          <StackPanel Spacing="12">
+            <TextBlock Text="RemoteConnect" Classes="h1" />
+            <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+            <TextBlock Text="{Binding StatusText}" TextWrapping="Wrap" FontSize="15" />
+
+            <StackPanel Spacing="8" IsVisible="{Binding ShowPassword}">
+              <TextBlock Classes="subtle" Text="Nobody there? This device allows unattended access — log in with its password:" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBox x:Name="PasswordBox" Text="{Binding Password}" PasswordChar="●" Watermark="Unattended-access password" />
+                <Button Grid.Column="1" Content="Log in" Margin="8,0,0,0" Command="{Binding SubmitPasswordCommand}" />
+              </Grid>
+              <TextBlock Text="{Binding AuthMessage}" Classes="subtle" />
+            </StackPanel>
+
+            <Border Background="#26EF4444" CornerRadius="8" Padding="10" IsVisible="{Binding IdentityChanged}">
+              <StackPanel Spacing="8">
+                <TextBlock TextWrapping="Wrap"
+                           Text="Only continue if you know this device was reinstalled or reset. Otherwise someone may be impersonating it." />
+                <Button Content="I trust the new identity — reconnect" Command="{Binding TrustNewIdentityCommand}" />
+              </StackPanel>
+            </Border>
+
+            <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+              <Button Content="Cancel" IsVisible="{Binding IsBusy}" Command="{Binding DisconnectCommand}" />
+              <Button Content="Reconnect" Classes="accent" IsVisible="{Binding IsEnded}" Command="{Binding ReconnectCommand}" />
+              <Button Content="Close" IsVisible="{Binding IsEnded}" Command="{Binding CloseCommand}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+      </Border>
+    </Grid>
+  </DockPanel>
+</Window>

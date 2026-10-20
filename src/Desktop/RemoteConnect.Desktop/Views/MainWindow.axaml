@@ -1,0 +1,200 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RemoteConnect.Desktop.ViewModels"
+        x:Class="RemoteConnect.Desktop.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="RemoteConnect"
+        Icon="/Assets/app-icon.png"
+        Width="1000" Height="680" MinWidth="780" MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PageBrush}">
+  <Grid ColumnDefinitions="300,*">
+
+    <!-- This desk -->
+    <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" Padding="22">
+      <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="10" Margin="0,0,0,22">
+          <Image Source="/Assets/app-icon.png" Width="34" Height="34" />
+          <TextBlock Text="RemoteConnect" FontSize="21" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding Settings.Version}" Foreground="#99FFFFFF" FontSize="11" />
+
+        <StackPanel Spacing="16">
+          <Border Background="#1AFFFFFF" CornerRadius="10" Padding="16">
+            <StackPanel Spacing="6">
+              <TextBlock Text="THIS DESK" Foreground="#B3FFFFFF" FontSize="11" FontWeight="SemiBold" />
+              <TextBlock Text="Your address" Foreground="#E6FFFFFF" />
+              <SelectableTextBlock Text="{Binding DeviceIdDisplay}" FontSize="30" FontWeight="Bold" Foreground="White"
+                                   AutomationProperties.Name="Your RemoteConnect address" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Button Content="Copy address" Command="{Binding CopyIdCommand}" Foreground="White" Background="#33FFFFFF"
+                        AutomationProperties.Name="Copy your address" />
+                <TextBlock Text="{Binding CopyFeedback}" Foreground="#B3FFFFFF" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Text="{Binding Alias}" Foreground="White" Margin="0,6,0,0" FontWeight="SemiBold" />
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <Ellipse Width="10" Height="10" Fill="{Binding StatusBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{Binding StatusText}" Foreground="White" TextWrapping="Wrap" MaxWidth="220" />
+              </StackPanel>
+              <TextBlock Text="{Binding LanText}" Foreground="#B3FFFFFF" FontSize="11" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Background="#1AFFFFFF" CornerRadius="10" Padding="16">
+            <StackPanel Spacing="6">
+              <TextBlock Text="INCOMING" Foreground="#B3FFFFFF" FontSize="11" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding IncomingText}" Foreground="White" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+
+          <Border Background="#33F59E0B" CornerRadius="10" Padding="14" IsVisible="{Binding PermissionHint, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{Binding PermissionHint}" Foreground="White" TextWrapping="Wrap" />
+              <Button Content="Grant permissions…" Command="{Binding GrantPermissionsCommand}" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <!-- Remote desk -->
+    <DockPanel Grid.Column="1" Margin="24,22,24,16">
+      <Border DockPanel.Dock="Top" Classes="card" Margin="0,0,0,16">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Remote Desk" Classes="h1" />
+          <TextBlock Classes="subtle" Text="Enter the address shown on the other computer (9-digit ID), or an IP address on your network." />
+          <Grid ColumnDefinitions="*,Auto" Margin="0,4,0,0">
+            <TextBox x:Name="AddressBox" Grid.Column="0" Text="{Binding RemoteAddress}" Watermark="e.g. 482 913 207 or 192.168.1.20"
+                     FontSize="16" AutomationProperties.Name="Remote address" />
+            <Button Grid.Column="1" Content="Connect" Classes="accent" Margin="10,0,0,0" Padding="22,8" FontSize="15"
+                    IsDefault="True" Command="{Binding ConnectCommand}" />
+          </Grid>
+          <TextBlock Text="{Binding ConnectError}" Classes="error" IsVisible="{Binding ConnectError, Converter={x:Static ObjectConverters.IsNotNull}}" />
+        </StackPanel>
+      </Border>
+
+      <TabControl>
+        <TabItem Header="Recent sessions">
+          <Panel>
+            <TextBlock Classes="subtle" Margin="4,12" IsVisible="{Binding HasNoRecent}"
+                       Text="No sessions yet. Connections you make or receive will appear here." />
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding Recent}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:RecentItem">
+                    <Border Classes="card" Margin="0,4" Padding="12">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Subtitle}" Classes="subtle" />
+                          <TextBlock Text="{Binding When}" Classes="subtle" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Connect" VerticalAlignment="Center"
+                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ConnectToCommand}"
+                                CommandParameter="{Binding Target}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </TabItem>
+
+        <TabItem Header="Local network">
+          <Panel>
+            <TextBlock Classes="subtle" Margin="4,12" IsVisible="{Binding HasNoPeers}"
+                       Text="No other RemoteConnect devices found on this network yet. Devices with LAN discovery enabled appear here automatically." />
+            <ScrollViewer>
+              <ItemsControl ItemsSource="{Binding Peers}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:PeerItem">
+                    <Border Classes="card" Margin="0,4" Padding="12">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel Spacing="2">
+                          <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                          <TextBlock Text="{Binding Subtitle}" Classes="subtle" />
+                        </StackPanel>
+                        <Button Grid.Column="1" Content="Connect" VerticalAlignment="Center"
+                                Command="{Binding $parent[Window].((vm:MainViewModel)DataContext).ConnectToCommand}"
+                                CommandParameter="{Binding Target}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </ScrollViewer>
+          </Panel>
+        </TabItem>
+
+        <TabItem Header="Settings">
+          <ScrollViewer DataContext="{Binding Settings}" x:DataType="vm:SettingsViewModel">
+            <StackPanel Spacing="6" Margin="4,8,16,16" MaxWidth="640" HorizontalAlignment="Left">
+
+              <TextBlock Text="General" Classes="h2" />
+              <TextBlock Text="Display name (shown to people you connect to)" />
+              <TextBox Text="{Binding Alias}" MaxLength="64" />
+              <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,6,0,0">
+                <TextBlock Text="Appearance" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" MinWidth="140" />
+              </StackPanel>
+              <CheckBox IsChecked="{Binding AutoStart}" IsEnabled="{Binding AutoStartSupported}"
+                        Content="Start RemoteConnect automatically when I sign in (stays in the tray, ready for connections)" />
+
+              <TextBlock Text="Server (for connections over the internet)" Classes="h2" />
+              <TextBlock Classes="subtle" Text="Address of your self-hosted RemoteConnect server, e.g. https://remote.example.com. Leave empty to use the local network only." />
+              <TextBox Text="{Binding ServerUrl}" Watermark="https://remote.example.com" />
+              <TextBlock Text="Registration key (if your server requires one)" Margin="0,4,0,0" />
+              <TextBox Text="{Binding RegistrationKey}" PasswordChar="●" RevealPassword="False" />
+
+              <TextBlock Text="Incoming connections" Classes="h2" />
+              <CheckBox IsChecked="{Binding AllowIncoming}" Content="Allow other devices to request access to this computer" />
+              <CheckBox IsChecked="{Binding AllowControl}" Content="When I accept, allow mouse and keyboard control (otherwise view only)" />
+              <CheckBox IsChecked="{Binding AllowClipboard}" Content="Allow clipboard (text) sharing during sessions" />
+
+              <TextBlock Text="Unattended access" Classes="h2" />
+              <TextBlock Classes="subtle" Text="Lets someone connect with a password when nobody is at this computer to accept. Off by default. Active sessions are always shown on screen and can be ended here." />
+              <TextBlock Text="{Binding PasswordStatus}" />
+              <Grid ColumnDefinitions="*,*,Auto" Margin="0,2,0,0">
+                <TextBox Grid.Column="0" Text="{Binding NewPassword}" PasswordChar="●" Watermark="New password (min. 8 characters)" Margin="0,0,6,0" />
+                <TextBox Grid.Column="1" Text="{Binding ConfirmPassword}" PasswordChar="●" Watermark="Repeat password" Margin="0,0,6,0" />
+                <Button Grid.Column="2" Content="Set password" Command="{Binding SetPasswordCommand}" />
+              </Grid>
+              <Button Content="Remove password" Classes="link" Command="{Binding ClearPasswordCommand}" IsVisible="{Binding HasPassword}" />
+              <CheckBox IsChecked="{Binding UnattendedEnabled}" Content="Enable unattended access with this password" />
+              <CheckBox IsChecked="{Binding UnattendedAllowControl}" Content="Unattended sessions may control mouse and keyboard" Margin="24,0,0,0" />
+              <TextBlock Text="Only these device IDs may use the password (comma separated, empty = any device):" Margin="24,4,0,0" TextWrapping="Wrap" />
+              <TextBox Text="{Binding UnattendedAllowList}" Watermark="e.g. 482 913 207, 615 004 982" Margin="24,0,0,0" />
+
+              <TextBlock Text="Network" Classes="h2" />
+              <CheckBox IsChecked="{Binding LanListenerEnabled}" Content="Accept direct connections on the local network" />
+              <StackPanel Orientation="Horizontal" Spacing="10" Margin="24,0,0,0">
+                <TextBlock Text="TCP port" VerticalAlignment="Center" />
+                <NumericUpDown Value="{Binding LanPort}" Minimum="1024" Maximum="65535" Increment="1" FormatString="0" Width="150" />
+              </StackPanel>
+              <CheckBox IsChecked="{Binding LanDiscoveryEnabled}" Content="Discover devices on the local network (UDP broadcast)" />
+
+              <TextBlock Text="Outgoing sessions" Classes="h2" />
+              <StackPanel Orientation="Horizontal" Spacing="10">
+                <TextBlock Text="Default quality" VerticalAlignment="Center" />
+                <ComboBox ItemsSource="{Binding Qualities}" SelectedItem="{Binding Quality}" MinWidth="140" />
+              </StackPanel>
+
+              <TextBlock Text="This device" Classes="h2" />
+              <TextBlock Text="{Binding DeviceId, StringFormat='ID: {0}'}" />
+              <SelectableTextBlock Text="{Binding Fingerprint, StringFormat='Key fingerprint: {0}'}" Classes="subtle" FontFamily="monospace" />
+              <Button Content="Open settings and logs folder" Classes="link" Command="{Binding OpenConfigFolderCommand}" />
+
+              <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,16,0,0">
+                <Button Content="Save" Classes="accent" Padding="28,8" Command="{Binding SaveCommand}" />
+                <TextBlock Text="{Binding Message}" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="460"
+                           Classes.error="{Binding MessageIsError}" />
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+    </DockPanel>
+  </Grid>
+</Window>

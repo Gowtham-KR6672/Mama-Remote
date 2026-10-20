@@ -1,0 +1,23 @@
+<Project>
+  <!--
+    Single place to change the target framework. The spec targets .NET 10; this machine
+    currently has only the .NET 8 SDK installed, so the default is net8.0.
+    Override without editing:  dotnet build -p:RemoteConnectTargetFramework=net10.0
+  -->
+  <PropertyGroup>
+    <RemoteConnectTargetFramework Condition="'$(RemoteConnectTargetFramework)' == ''">net8.0</RemoteConnectTargetFramework>
+    <TargetFramework>$(RemoteConnectTargetFramework)</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>0.1.0</Version>
+    <Product>RemoteConnect</Product>
+    <Copyright>RemoteConnect contributors</Copyright>
+    <Deterministic>true</Deterministic>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <!-- CA1416 (platform compatibility) stays on: every OS-specific call must be guarded. -->
+    <WarningsAsErrors>$(WarningsAsErrors);CA1416</WarningsAsErrors>
+  </PropertyGroup>
+</Project>

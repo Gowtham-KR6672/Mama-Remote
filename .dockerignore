@@ -1,0 +1,12 @@
+**/bin
+**/obj
+artifacts
+tests
+docs
+scripts
+src/Desktop
+src/Engine
+.vs
+.git
+*.user
+**/data

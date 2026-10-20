@@ -1,0 +1,17 @@
+bin/
+obj/
+artifacts/
+publish/
+TestResults/
+*.user
+*.suo
+.vs/
+.idea/
+*.DotSettings.user
+# Server runtime data (device registry, audit logs) - never commit
+src/Server/RemoteConnect.Server/data/
+# Local secrets
+appsettings.Local.json
+*.pfx
+*.p12
+.env

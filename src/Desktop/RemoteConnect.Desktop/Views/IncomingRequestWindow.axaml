@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:RemoteConnect.Desktop.ViewModels"
+        x:Class="RemoteConnect.Desktop.Views.IncomingRequestWindow"
+        x:DataType="vm:IncomingRequestViewModel"
+        Title="RemoteConnect — incoming request"
+        Icon="/Assets/app-icon.png"
+        Width="460" SizeToContent="Height" CanResize="False"
+        Topmost="True" WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource PageBrush}">
+  <StackPanel Margin="22" Spacing="12">
+    <TextBlock Text="Incoming connection request" Classes="h1" />
+
+    <Border Classes="card">
+      <StackPanel Spacing="4">
+        <TextBlock Text="{Binding DisplayName}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" />
+        <TextBlock Text="{Binding DeviceId, StringFormat='ID {0}'}" FontSize="15" />
+        <TextBlock Text="{Binding Platform}" Classes="subtle" />
+        <TextBlock Text="{Binding Route}" Classes="subtle" />
+        <TextBlock Text="{Binding Fingerprint, StringFormat='Key: {0}'}" Classes="subtle" FontFamily="monospace" />
+      </StackPanel>
+    </Border>
+
+    <TextBlock Text="Wants to:" FontWeight="SemiBold" />
+    <TextBlock Text="{Binding PermissionsText}" TextWrapping="Wrap" />
+    <Border Background="#26F59E0B" CornerRadius="8" Padding="10">
+      <TextBlock Text="{Binding Warning}" TextWrapping="Wrap" />
+    </Border>
+    <TextBlock Classes="subtle" IsVisible="{Binding UnattendedNote}"
+               Text="Unattended access is enabled: this person could also log in with the password instead." />
+
+    <TextBlock Text="{Binding CountdownText}" Classes="subtle" />
+    <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+      <Button Content="Reject" Command="{Binding RejectCommand}" IsCancel="True" />
+      <Button Content="View only" Command="{Binding ViewOnlyCommand}" />
+      <Button Content="Accept" Classes="accent" Command="{Binding AcceptCommand}" />
+    </StackPanel>
+  </StackPanel>
+</Window>

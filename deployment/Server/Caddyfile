@@ -1,0 +1,15 @@
+# Caddy terminates HTTPS (automatic Let's Encrypt certificate) and forwards to the server on localhost.
+# WebSockets (SignalR hub and relay) are proxied automatically.
+# Replace remote.example.com with your DNS name pointing at this machine (ports 80 and 443 open).
+
+remote.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:5080 {
+		# Relayed sessions are long-lived streams.
+		flush_interval -1
+		transport http {
+			read_timeout 0
+			write_timeout 0
+		}
+	}
+}

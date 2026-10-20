@@ -1,0 +1,27 @@
+# Render Blueprint for the RemoteConnect server (https://render.com/docs/blueprint-spec).
+# Render → New → Blueprint → pick this repository. You are asked for the registration key once.
+services:
+  - type: web
+    name: remoteconnect-server
+    runtime: docker
+    dockerfilePath: ./deployment/Server/Dockerfile
+    dockerContext: .
+    # "starter" (paid) stays on 24/7. "free" works for trials but sleeps when idle, so devices go offline.
+    plan: starter
+    # Pick the region closest to your computers: singapore, frankfurt, oregon, ohio, virginia.
+    region: singapore
+    healthCheckPath: /health/ready
+    autoDeploy: true
+    envVars:
+      - key: RemoteConnect__RegistrationKey
+        sync: false          # you type it in the Render dashboard; never committed
+      - key: RemoteConnect__AdminApiKey
+        generateValue: true  # random; copy it from the dashboard if you use the admin API
+      - key: RemoteConnect__TrustForwardedHeaders
+        value: "true"        # Render's proxy is the only way in; use the real client IP for limits/audit
+    # Device bindings live in the container and are rebuilt automatically when devices reconnect after a
+    # restart; audit events also go to Render's log stream. To keep them on disk across deploys, add:
+    # disk:
+    #   name: remoteconnect-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

@@ -1,0 +1,33 @@
+# systemd unit for running RemoteConnect.Server on Linux (published with -r linux-x64 --self-contained).
+#   sudo useradd --system --home /var/lib/remoteconnect --shell /usr/sbin/nologin remoteconnect
+#   sudo mkdir -p /opt/remoteconnect-server /var/lib/remoteconnect && sudo chown remoteconnect: /var/lib/remoteconnect
+#   sudo cp -r artifacts/RemoteConnect.Server-linux-x64/* /opt/remoteconnect-server/
+#   sudo install -m 600 /dev/null /etc/remoteconnect-server.env   # then add the variables below
+#   sudo cp remoteconnect-server.service /etc/systemd/system/ && sudo systemctl enable --now remoteconnect-server
+
+[Unit]
+Description=RemoteConnect signaling and relay server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=remoteconnect
+Group=remoteconnect
+WorkingDirectory=/opt/remoteconnect-server
+ExecStart=/opt/remoteconnect-server/RemoteConnect.Server
+Environment=DOTNET_ENVIRONMENT=Production
+Environment=Kestrel__Endpoints__Http__Url=http://127.0.0.1:5080
+Environment=RemoteConnect__DataDirectory=/var/lib/remoteconnect
+# RemoteConnect__RegistrationKey=... and RemoteConnect__AdminApiKey=... go in this root-only file:
+EnvironmentFile=/etc/remoteconnect-server.env
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/remoteconnect
+
+[Install]
+WantedBy=multi-user.target
