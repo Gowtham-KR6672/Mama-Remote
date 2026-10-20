@@ -102,14 +102,19 @@ public sealed record HelloMessage(
     string AppVersion,
     SessionPermissions RequestedPermissions);
 
-/// <summary>Host → controller. May be sent twice: PendingApproval, then the final outcome.</summary>
+/// <summary>
+/// Host → controller. May be sent twice: PendingApproval, then the final outcome. <paramref name="PasswordOnly"/>
+/// means nobody can accept a prompt on the host (service mode, e.g. at the sign-in screen): only the unattended
+/// password can grant access. Older peers omit it (false).
+/// </summary>
 public sealed record HelloResultMessage(
     HelloOutcome Outcome,
     SessionPermissions Granted,
     string HostAlias,
     string HostPlatform,
     string? Message,
-    bool UnattendedAvailable);
+    bool UnattendedAvailable,
+    bool PasswordOnly = false);
 
 /// <summary>Controller → host while approval is pending: unattended-access password.</summary>
 public sealed record PasswordAuthMessage(string Password);

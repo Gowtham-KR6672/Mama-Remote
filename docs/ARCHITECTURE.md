@@ -6,8 +6,10 @@
 |---|---|---|
 | `RemoteConnect.Desktop` | every Windows/macOS computer, as the signed-in user | UI, tray, and both the **controller** and **host** roles. Starts at sign-in. |
 | `RemoteConnect.Server` | any server (Windows service, Linux systemd, or `dotnet run`) | Device registry, ID lookup, signaling (SignalR), WebSocket **relay**, audit log, admin API. Optional for LAN use. |
+| `RemoteConnect.HostService` | Windows, **service mode only** (opt-in), Session 0 as LocalSystem | Starts at boot and keeps the session agent running in the active console session. Also the administrator CLI for service-mode settings. |
+| `RemoteConnect.Desktop --agent` | Windows, **service mode only**, the console session as privilege-free LocalSystem | Headless host (HostAgent + SignalingClient + LanDiscovery) with the machine's own ID. It follows the input desktop, so the sign-in, lock and UAC screens work. No main window or tray; only the session panel. |
 
-The spec asks for a separate Windows service (Session 0) plus a per-session agent, so the computer is reachable at the sign-in screen. That is not built yet; see [STATUS.md](STATUS.md). Today the host runs inside the signed-in user's session, the same way AnyDesk runs when it is not installed as a service.
+By default the host runs inside the signed-in user's session, the same way AnyDesk runs when it is not installed as a service. [Service mode](#service-mode-windows) adds the spec's Session-0 service and per-session agent, so the computer is reachable from power-on.
 
 ## Libraries
 
@@ -21,7 +23,11 @@ RemoteConnect.Platform   ← IScreenCapturer / IInputInjector / IAutoStart and t
                            macOS:   CGDisplayCreateImage capture, CGEvent input, LaunchAgent
 RemoteConnect.Session    ← HostAgent/HostSession, ControllerSession, Connector, TileEncoder/RemoteFramebuffer,
                            PeerConnection/PeerConnector (TCP or WebSocket + TLS), LanDiscovery, SignalingClient.
-RemoteConnect.Desktop    ← Avalonia 11 UI (MVVM, CommunityToolkit.Mvvm), composition root (AppHost).
+RemoteConnect.LocalIpc   ← service ↔ agent pipe: two typed messages (heartbeat, status) with strict validation,
+                           pipe ACL + peer-process checks, service-mode paths/settings, public status (HKLM).
+RemoteConnect.Desktop    ← Avalonia 11 UI (MVVM, CommunityToolkit.Mvvm), composition root (AppHost);
+                           --agent: service-mode composition root (AgentHost).
+RemoteConnect.HostService← Windows service: agent supervisor (pure state machine + Win32 launcher), admin CLI.
 RemoteConnect.Server     ← ASP.NET Core minimal API + SignalR hub + relay broker.
 ```
 
@@ -91,6 +97,35 @@ A static screen costs almost nothing, and typing changes only a few tiles. Flow 
 | Quality | 2560×1600 | 85 | 25 |
 
 Planned M2: DXGI Desktop Duplication (Windows) and ScreenCaptureKit (macOS) capture, plus hardware H.264, behind the same `IScreenCapturer`/FrameUpdate interfaces.
+
+## Service mode (Windows)
+
+```
+power-on ─► SCM starts RemoteConnect.HostService (LocalSystem, Session 0)
+              │  every 1 s + on SERVICE_CONTROL_SESSIONCHANGE: WTSGetActiveConsoleSessionId()
+              ▼
+        AgentSupervisorStateMachine ── LaunchAgent(session) / StopAgent(pid, graceful|force)
+              │
+              │ 1. install-folder ACL check (only SYSTEM / Administrators / TrustedInstaller may own or write)
+              │ 2. pipe \\.\pipe\RemoteConnect.HostService.v1, first instance only, ACL: LocalSystem; deny NETWORK
+              │ 3. own token → CreateRestrictedToken(DISABLE_MAX_PRIVILEGE) → TokenSessionId = console session
+              │ 4. CreateProcessAsUser("…\RemoteConnect.Desktop.exe" --agent, desktop winsta0\default)
+              ▼
+        session agent (console session, LocalSystem without privileges)
+              │ connects to the pipe (SecurityIdentification), checks the server is the service binary as LocalSystem;
+              │ the service checks the client is exactly the PID it launched, from the expected path
+              │ agent → service: Status {ID, fingerprint, state, input desktop, port, server, sessions, unattended ready}
+              │ agent ↔ service: Heartbeat every 5 s (30 s of silence → the agent exits / the service terminates it)
+              ▼
+        HostAgent (password-only policy) + SignalingClient + LanDiscovery, machine ID and settings
+        capture / input on dedicated threads: OpenInputDesktop → SetThreadDesktop before every call
+              (Winlogon at the sign-in, lock and UAC screens; Default after sign-in)
+```
+
+- **One ID per computer.** The agent has its own key in the LocalSystem profile. When the service is installed, the per-user app stops hosting: no LAN listener, no announcements, relay offers refused. It shows the service's ID from `HKLM\SOFTWARE\RemoteConnect\Service`, so the two never compete for port 47070.
+- **Password-only.** `HostOptions.AttendedApprovalAvailable = false`. Controllers that cannot use the unattended password are refused at once with `NotAllowed`; the others get `PendingApproval {PasswordOnly}` and must send the password. No prompt is ever shown.
+- **Session switches.** The state machine stops the old agent first (graceful: the service closes the pipe, and the agent ends its sessions and exits; forced after 8 s), then launches into the new console session. A transient "no console session" during a switch is ignored. Crashes, failed launches and silent agents are relaunched with backoff of 2, 4, 8 … up to 60 s.
+- **Settings** are administrator-only (`RemoteConnect.HostService.exe set-password | disable-unattended | allow | …`). The agent re-reads them every 5 s; network changes apply without a restart.
 
 ## Server
 

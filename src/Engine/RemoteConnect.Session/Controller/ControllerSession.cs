@@ -62,6 +62,9 @@ public sealed class ControllerSession : IAsyncDisposable
 
     public bool UnattendedAvailable { get; private set; }
 
+    /// <summary>The host cannot show an approval prompt (service mode): only the unattended password works.</summary>
+    public bool PasswordOnly { get; private set; }
+
     public string RemoteDeviceId => _connection.RemoteDeviceId;
 
     public string RemoteFingerprint => _connection.RemoteFingerprint;
@@ -247,6 +250,7 @@ public sealed class ControllerSession : IAsyncDisposable
                 if (m.Outcome == HelloOutcome.PendingApproval)
                 {
                     UnattendedAvailable = m.UnattendedAvailable;
+                    PasswordOnly = m.PasswordOnly;
                     State = ControllerState.WaitingForApproval;
                     StateChanged?.Invoke();
                 }

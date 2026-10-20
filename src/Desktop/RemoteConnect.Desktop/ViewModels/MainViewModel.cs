@@ -46,12 +46,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     public SettingsViewModel Settings { get; }
 
-    public string DeviceIdDisplay => DeviceIds.Format(_app.Identity.DeviceId);
 
     public ObservableCollection<RecentItem> Recent { get; } = new();
 
     public ObservableCollection<PeerItem> Peers { get; } = new();
 
+    [ObservableProperty] private string _deviceIdDisplay = string.Empty;
     [ObservableProperty] private string _alias = string.Empty;
     [ObservableProperty] private string _remoteAddress = string.Empty;
     [ObservableProperty] private string _statusText = string.Empty;
@@ -87,7 +87,7 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private async Task CopyId()
     {
-        await _copyText(_app.Identity.DeviceId);
+        await _copyText(_app.IncomingDeviceId);
         CopyFeedback = "Copied";
         await Task.Delay(1500);
         CopyFeedback = null;
@@ -104,6 +104,13 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var s = _app.Settings;
         Alias = s.Alias;
+        DeviceIdDisplay = DeviceIds.Format(_app.IncomingDeviceId);
+        if (_app.ServiceModeInstalled)
+        {
+            RefreshServiceModeStatus();
+            return;
+        }
+
         var sig = _app.Signaling;
         bool lan = _app.Host.ListeningPort is not null;
         (StatusBrush, StatusText) = sig.Status switch
@@ -137,6 +144,26 @@ public sealed partial class MainViewModel : ObservableObject
         }
 
         PermissionHint = PlatformServices.CheckPermissions().Hint;
+    }
+
+    /// <summary>Service mode: incoming connections belong to the service; show its state instead of this app's.</summary>
+    private void RefreshServiceModeStatus()
+    {
+        var service = _app.ServiceStatus;
+        (StatusBrush, StatusText) = service?.State switch
+        {
+            "Ready" => (Green, "Ready — reachable through the RemoteConnect service, even at the sign-in screen"),
+            "Degraded" => (Amber, "RemoteConnect service running with problems (see its log)"),
+            "Blocked" => (Red, "The RemoteConnect service cannot start its agent (see the Windows Event Log)"),
+            "Stopped" => (Red, "The RemoteConnect service is stopped"),
+            null => (Amber, "Waiting for the RemoteConnect service…"),
+            _ => (Amber, "RemoteConnect service: " + service.State),
+        };
+        LanText = "Incoming connections are handled by the RemoteConnect service";
+        IncomingText = service?.UnattendedReady == true
+            ? "Unattended access: ON (service password)"
+            : "Unattended access: OFF — nobody can connect until an administrator runs RemoteConnect.HostService.exe set-password";
+        PermissionHint = null;
     }
 
     private void RefreshRecent()

@@ -39,6 +39,8 @@ powershell -ExecutionPolicy Bypass -File .\artifacts\RemoteConnect-win-x64\insta
 
 The installer is per-user and needs no admin rights. It copies the app, creates a Start-menu entry, enables start-at-sign-in and launches RemoteConnect. Add `-AddFirewallRules` from an elevated prompt to pre-allow LAN connections, and `-ServerUrl https://remote.example.com` to pre-configure your server. An Inno Setup script for a classic `Setup.exe` is in [deployment/Windows](deployment/Windows/RemoteConnect.iss).
 
+**Reachable right after power-on (service mode).** To reach a PC at the Windows sign-in screen, before anyone signs in, install it from an elevated prompt with `-ServiceMode`. A Windows service then runs the host from boot, and only an unattended-access password set by an administrator (`RemoteConnect.HostService.exe set-password`) grants access. It is new and not yet tested on a real machine; see [Windows installation → Service mode](docs/WINDOWS_INSTALL.md#service-mode-reachable-right-after-power-on).
+
 ## Quick start (macOS)
 
 On a Mac with the .NET SDK and Xcode command-line tools:
@@ -75,9 +77,11 @@ In each client go to **Settings → Server** and enter your `https://` address a
 ```
 src/Shared/RemoteConnect.Protocol      wire messages, framing, frame updates, signaling contracts
 src/Shared/RemoteConnect.Security      device identity (keys/ID), fingerprints, TLS settings, password hashing
+src/Shared/RemoteConnect.LocalIpc      service-mode pipe between the Windows service and its session agent (2 validated messages)
 src/Engine/RemoteConnect.Platform      screen capture + input injection + auto-start (Windows GDI/SendInput, macOS CoreGraphics/CGEvent)
 src/Engine/RemoteConnect.Session       host & controller sessions, codec, transports (TCP/WebSocket + TLS), LAN discovery, signaling client
-src/Desktop/RemoteConnect.Desktop      Avalonia UI app (Windows + macOS): dashboard, tray, prompts, remote view
+src/Desktop/RemoteConnect.Desktop      Avalonia UI app (Windows + macOS): dashboard, tray, prompts, remote view; --agent = service-mode host
+src/Host/RemoteConnect.HostService     Windows service (opt-in service mode): runs the agent in the console session; admin CLI
 src/Server/RemoteConnect.Server        ASP.NET Core: device registry, SignalR signaling, WebSocket relay, audit, health, admin API
 tests/                                 unit + integration tests (real TLS sessions on loopback and through the relay)
 scripts/                               build, test, run, publish, install/uninstall, smoke test, icons

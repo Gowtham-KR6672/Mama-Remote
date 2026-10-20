@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>RemoteConnect.LocalIpc</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\RemoteConnect.Protocol\RemoteConnect.Protocol.csproj" />
+    <ProjectReference Include="..\RemoteConnect.Security\RemoteConnect.Security.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="RemoteConnect.UnitTests" />
+  </ItemGroup>
+</Project>

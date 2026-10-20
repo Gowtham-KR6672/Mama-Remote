@@ -5,6 +5,7 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Platform;
 using Avalonia.Threading;
 using Microsoft.Extensions.Logging;
+using RemoteConnect.Desktop.Agent;
 using RemoteConnect.Desktop.Services;
 using RemoteConnect.Desktop.ViewModels;
 using RemoteConnect.Desktop.Views;
@@ -30,6 +31,15 @@ public partial class App : Application
 
     public override void OnFrameworkInitializationCompleted()
     {
+        if (OperatingSystem.IsWindows() && AgentMode.IsActive && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime agent)
+        {
+            // Service-mode session agent: no main window, no tray; only the session panel when someone connects.
+            agent.ShutdownMode = ShutdownMode.OnExplicitShutdown;
+            AgentMode.Start(agent);
+            base.OnFrameworkInitializationCompleted();
+            return;
+        }
+
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             desktop.ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -87,7 +97,7 @@ public partial class App : Application
 
     private void SetupTray(IClassicDesktopStyleApplicationLifetime desktop)
     {
-        var id = DeviceIds.Format(_host!.Identity.DeviceId);
+        var id = DeviceIds.Format(_host!.IncomingDeviceId);
         var menu = new NativeMenu();
         menu.Items.Add(new NativeMenuItem($"Your address: {id}") { IsEnabled = false });
         menu.Items.Add(new NativeMenuItemSeparator());

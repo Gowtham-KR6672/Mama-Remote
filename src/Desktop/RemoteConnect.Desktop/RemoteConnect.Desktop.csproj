@@ -20,5 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\Engine\RemoteConnect.Session\RemoteConnect.Session.csproj" />
+    <ProjectReference Include="..\..\Shared\RemoteConnect.LocalIpc\RemoteConnect.LocalIpc.csproj" />
   </ItemGroup>
 </Project>

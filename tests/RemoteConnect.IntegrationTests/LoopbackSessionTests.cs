@@ -184,6 +184,45 @@ public class LoopbackSessionTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Service_mode_refuses_controllers_without_unattended_access_and_never_prompts()
+    {
+        // Service mode (e.g. the sign-in screen): nobody can answer a prompt, and no password is set up.
+        var ui = ScriptedInteraction.Always(ApprovalDecision.Accept);
+        StartHost(ui, new HostOptions { AttendedApprovalAvailable = false });
+        var session = await ConnectAsync(HostKey.Value.Fingerprint);
+
+        await Wait.UntilAsync(() => session.State == ControllerState.Ended, "refusal");
+        Assert.Equal(HelloOutcome.NotAllowed, session.Outcome);
+        Assert.Empty(ui.Requests); // an "Accept" prompt must not be able to grant access in service mode
+        Assert.Empty(_host!.Sessions);
+    }
+
+    [Fact]
+    public async Task Service_mode_admits_only_the_unattended_password()
+    {
+        var ui = ScriptedInteraction.Always(ApprovalDecision.Accept);
+        var options = new HostOptions
+        {
+            AttendedApprovalAvailable = false,
+            UnattendedEnabled = true,
+            UnattendedPasswordHash = PasswordHasher.Hash("sign-in-screen-pass"),
+            UnattendedPermissions = SessionPermissions.ViewScreen | SessionPermissions.ControlInput,
+        };
+        StartHost(ui, options);
+        var session = await ConnectAsync(HostKey.Value.Fingerprint);
+        await Wait.UntilAsync(() => session.State == ControllerState.WaitingForApproval && session.UnattendedAvailable, "pending");
+        Assert.True(session.PasswordOnly);
+
+        session.SendPassword("sign-in-screen-pass");
+        await Wait.UntilAsync(() => session.State == ControllerState.Connected, "unattended login");
+        var hostSession = await ui.Started.Task.WaitAsync(Wait.Timeout);
+        Assert.True(hostSession.IsUnattended);
+        Assert.False(session.Has(SessionPermissions.Clipboard));
+        Assert.Empty(ui.Requests);
+        await session.DisconnectAsync();
+    }
+
+    [Fact]
     public async Task Second_controller_gets_busy_while_a_session_is_active()
     {
         var ui = ScriptedInteraction.Always(ApprovalDecision.Accept);

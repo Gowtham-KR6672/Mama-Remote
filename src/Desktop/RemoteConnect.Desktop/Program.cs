@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
+using RemoteConnect.Desktop.Agent;
 using RemoteConnect.Desktop.Services;
+using RemoteConnect.LocalIpc;
 using RemoteConnect.Platform;
 
 namespace RemoteConnect.Desktop;
@@ -14,6 +16,12 @@ internal static class Program
         {
             Console.WriteLine($"RemoteConnect {AppHost.AppVersion}");
             return 0;
+        }
+
+        // Service mode: started by RemoteConnect.HostService in the console session (sign-in screen included).
+        if (args.Contains(ServiceModeLayout.AgentArgument))
+        {
+            return OperatingSystem.IsWindows() ? AgentMode.Run(args) : 2; // service mode is Windows-only
         }
 
         AppDomain.CurrentDomain.UnhandledException += (_, e) => CrashLog(e.ExceptionObject as Exception);
@@ -55,7 +63,7 @@ internal static class Program
             .WithInterFont()
             .LogToTrace();
 
-    private static void CrashLog(Exception? ex)
+    internal static void CrashLog(Exception? ex)
     {
         try
         {

@@ -1,5 +1,6 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using RemoteConnect.LocalIpc.Windows;
 using RemoteConnect.Platform;
 using RemoteConnect.Protocol;
 using RemoteConnect.Protocol.Signaling;
@@ -29,6 +30,7 @@ public sealed class AppHost : IAsyncDisposable
         Interaction = interaction;
         Clipboard = clipboard;
         Logger = loggers.CreateLogger("RemoteConnect.App");
+        ServiceModeInstalled = OperatingSystem.IsWindows() && ServiceStatusRegistry.IsServiceInstalled();
 
         Signaling = new SignalingClient(identity, loggers.CreateLogger("RemoteConnect.Signaling"))
         {
@@ -66,6 +68,21 @@ public sealed class AppHost : IAsyncDisposable
 
     public Connector Connector { get; }
 
+    /// <summary>
+    /// The RemoteConnect service (service mode) is installed: it hosts incoming connections for this computer under
+    /// its own machine ID, including at the sign-in screen. This app then only makes outgoing connections, so the two
+    /// never compete for the LAN port or announce two IDs for one computer.
+    /// </summary>
+    public bool ServiceModeInstalled { get; }
+
+    /// <summary>What the service last published (state, machine ID, unattended access); null outside service mode.</summary>
+    public ServicePublicStatus? ServiceStatus => OperatingSystem.IsWindows() && ServiceModeInstalled ? ServiceStatusRegistry.TryRead() : null;
+
+    /// <summary>The ID other people use to reach this computer: the service's ID in service mode, otherwise ours.</summary>
+    public string IncomingDeviceId => ServiceStatus?.DeviceId ?? Identity.DeviceId;
+
+    private bool HostsIncoming => Settings.AllowIncoming && !ServiceModeInstalled;
+
     public event Action? RecentChanged;
 
     public static AppHost Create(HostInteraction interaction, IClipboardBridge clipboard)
@@ -76,6 +93,11 @@ public sealed class AppHost : IAsyncDisposable
         var identity = DeviceIdentityStore.LoadOrCreate(AppPaths.IdentityFile);
         var host = new AppHost(store, identity, logProvider, loggers, interaction, clipboard);
         host.Logger.LogInformation("RemoteConnect {Version} on {Platform}; device ID {Id}", AppVersion, PlatformServices.PlatformName, identity.DeviceId);
+        if (host.ServiceModeInstalled)
+        {
+            host.Logger.LogInformation("Service mode is installed: incoming connections are handled by the RemoteConnect service");
+        }
+
         return host;
     }
 
@@ -99,7 +121,7 @@ public sealed class AppHost : IAsyncDisposable
     /// <summary>Re-applies listener, discovery and server settings after the user saved Settings.</summary>
     public async Task ApplyNetworkSettingsAsync()
     {
-        if (Settings.LanListenerEnabled && Settings.AllowIncoming)
+        if (Settings.LanListenerEnabled && HostsIncoming)
         {
             if (Host.ListeningPort is null || _appliedLanPort != Settings.LanPort)
             {
@@ -159,7 +181,7 @@ public sealed class AppHost : IAsyncDisposable
             Alias = s.Alias,
             Platform = PlatformServices.PlatformName,
             AppVersion = AppVersion,
-            AllowIncoming = s.AllowIncoming,
+            AllowIncoming = HostsIncoming,
             AttendedPermissions = attended,
             UnattendedEnabled = s.UnattendedEnabled,
             UnattendedPasswordHash = s.UnattendedPasswordHash,
@@ -180,7 +202,7 @@ public sealed class AppHost : IAsyncDisposable
     private LanAnnouncement? BuildAnnouncement()
     {
         int? port = Host.ListeningPort;
-        if (!Settings.AllowIncoming || port is null)
+        if (!HostsIncoming || port is null)
         {
             return null;
         }
@@ -189,7 +211,7 @@ public sealed class AppHost : IAsyncDisposable
     }
 
     public string[] LanEndpoints()
-        => Settings.AllowIncoming && Host.ListeningPort is int port ? NetworkInfo.Endpoints(port) : Array.Empty<string>();
+        => HostsIncoming && Host.ListeningPort is int port ? NetworkInfo.Endpoints(port) : Array.Empty<string>();
 
     public void RecordRecent(RecentSession session)
     {

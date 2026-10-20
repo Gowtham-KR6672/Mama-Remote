@@ -22,6 +22,12 @@ public sealed record HostOptions
     /// <summary>Master switch: when false every incoming request is refused.</summary>
     public bool AllowIncoming { get; init; } = true;
 
+    /// <summary>
+    /// False in service mode: the host may be at the sign-in screen with nobody to answer a prompt, so the opt-in
+    /// unattended password is the only way in and no approval prompt is ever shown.
+    /// </summary>
+    public bool AttendedApprovalAvailable { get; init; } = true;
+
     /// <summary>Granted when the local user clicks Accept.</summary>
     public SessionPermissions AttendedPermissions { get; init; } =
         SessionPermissions.ViewScreen | SessionPermissions.ControlInput | SessionPermissions.Clipboard;

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using RemoteConnect.Platform.MacOS;
 using RemoteConnect.Platform.Windows;
 
@@ -44,6 +45,17 @@ public static class PlatformServices
 
         throw new PlatformNotSupportedException("Input injection is implemented for Windows and macOS.");
     }
+
+    /// <summary>
+    /// Service mode (Windows): capture that follows the input desktop, so the sign-in, lock and UAC screens are visible
+    /// to the LocalSystem session agent.
+    /// </summary>
+    [SupportedOSPlatform("windows")]
+    public static IScreenCapturer CreateInputDesktopCapturer() => new InputDesktopCapturer(new GdiScreenCapturer());
+
+    /// <summary>Service mode (Windows): input that follows the input desktop (see <see cref="CreateInputDesktopCapturer"/>).</summary>
+    [SupportedOSPlatform("windows")]
+    public static IInputInjector CreateInputDesktopInjector() => new InputDesktopInjector(new SendInputInjector());
 
     public static IAutoStart AutoStart { get; } = CreateAutoStart();
 

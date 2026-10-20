@@ -206,6 +206,13 @@ public sealed class HostAgent : IAsyncDisposable
                 return;
             }
 
+            if (!options.AttendedApprovalAvailable && !options.IsUnattendedAvailableFor(conn.RemoteDeviceId))
+            {
+                await RefuseAsync(conn, options, HelloOutcome.NotAllowed,
+                    "Nobody can accept requests on this computer right now, and unattended access is not set up for your device.").ConfigureAwait(false);
+                return;
+            }
+
             if (Sessions.Count + Volatile.Read(ref _pendingRequests) >= options.MaxSessions)
             {
                 await RefuseAsync(conn, options, HelloOutcome.Busy, "The remote device is busy with another session.").ConfigureAwait(false);
@@ -270,9 +277,11 @@ public sealed class HostAgent : IAsyncDisposable
         string controllerId = conn.RemoteDeviceId;
         bool unattendedAvailable = options.IsUnattendedAvailableFor(controllerId);
 
+        bool passwordOnly = !options.AttendedApprovalAvailable;
         await conn.SendJsonAsync(MessageType.HelloResult, new HelloResultMessage(
             HelloOutcome.PendingApproval, SessionPermissions.None, options.Alias, options.Platform,
-            "Waiting for the remote user to accept.", unattendedAvailable), _cts.Token).ConfigureAwait(false);
+            passwordOnly ? "Enter the unattended-access password for this computer." : "Waiting for the remote user to accept.",
+            unattendedAvailable, passwordOnly), _cts.Token).ConfigureAwait(false);
 
         using var approvalCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
         approvalCts.CancelAfter(options.ApprovalTimeout);
@@ -287,7 +296,9 @@ public sealed class HostAgent : IAsyncDisposable
             DateTimeOffset.UtcNow + options.ApprovalTimeout,
             unattendedAvailable);
 
-        var approvalTask = _interaction.RequestApprovalAsync(request, approvalCts.Token);
+        var approvalTask = passwordOnly
+            ? NoPromptAsync(approvalCts.Token)
+            : _interaction.RequestApprovalAsync(request, approvalCts.Token);
         var timeoutTask = Task.Delay(Timeout.Infinite, approvalCts.Token);
         try
         {
@@ -360,6 +371,13 @@ public sealed class HostAgent : IAsyncDisposable
             {
             }
         }
+    }
+
+    /// <summary>Service mode: there is no one to ask, so the "prompt" only ends when the request times out.</summary>
+    private static async Task<ApprovalDecision> NoPromptAsync(CancellationToken ct)
+    {
+        await Task.Delay(Timeout.Infinite, ct).ConfigureAwait(false);
+        return ApprovalDecision.Reject;
     }
 
     private Task SendAuthStatusAsync(PeerConnection conn, AuthStatusMessage status)

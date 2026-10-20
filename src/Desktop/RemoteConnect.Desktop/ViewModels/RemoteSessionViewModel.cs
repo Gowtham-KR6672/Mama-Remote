@@ -158,7 +158,9 @@ public sealed partial class RemoteSessionViewModel : ObservableObject, IAsyncDis
             case ControllerState.WaitingForApproval:
                 Phase = SessionPhase.Waiting;
                 ShowPassword = s.UnattendedAvailable;
-                StatusText = $"Waiting for the user at {host} to accept…";
+                StatusText = s.PasswordOnly
+                    ? $"{host} can only be reached with its unattended-access password right now."
+                    : $"Waiting for the user at {host} to accept…";
                 break;
             case ControllerState.Connected:
                 Phase = SessionPhase.Connected;

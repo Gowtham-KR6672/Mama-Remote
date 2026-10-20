@@ -10,6 +10,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Engine\RemoteConnect.Session\RemoteConnect.Session.csproj" />
+    <ProjectReference Include="..\..\src\Shared\RemoteConnect.LocalIpc\RemoteConnect.LocalIpc.csproj" />
+    <ProjectReference Include="..\..\src\Host\RemoteConnect.HostService\RemoteConnect.HostService.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
